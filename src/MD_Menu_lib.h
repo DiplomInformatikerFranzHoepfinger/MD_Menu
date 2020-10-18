@@ -62,12 +62,13 @@ tree is equal to three.
  * \brief Contains internal library definitions
  */
 
-#define MD_DEBUG 0  ///< set to 1 to enable library debugging mode
+#define MD_DEBUG 1  ///< set to 1 to enable library debugging mode
 
 #if MD_DEBUG
-#define MD_PRINTS(s)   { Serial.print(F(s)); }                  ///< Library debugging output macro
-#define MD_PRINT(s, v) { Serial.print(F(s)); Serial.print(v); } ///< Library debugging output macro
-#define MD_PRINTX(s, v) { Serial.print(F(s)); Serial.print(F("0x")); Serial.print(v); } ///< Library debugging output macro
+static const char *TAG = "MD_Menu_lib";
+#define MD_PRINTS(s)   { ESP_LOGI(TAG, s); }                  ///< Library debugging output macro
+#define MD_PRINT(s, v) { ESP_LOGI(TAG, s, v); } ///< Library debugging output macro
+#define MD_PRINTX(s, v) { ESP_LOGI(TAG, s, v); } ///< Library debugging output macro
 #else
 #define MD_PRINTS(s)      ///< Library debugging output macro
 #define MD_PRINT(s, v)    ///< Library debugging output macro
@@ -94,8 +95,8 @@ const uint8_t ENGU_RANGE = 18;       ///< Syymentrical range of power prefixes f
 #define INP_POST_SIZE(mi) (strlen(FLD_DELIM_R))  ///< Size of text after variable display
 
 // Global options and flags management
-#define SET_FLAG(f)   { _options |= (1<<f);  MD_PRINTX("\nSet Flag ",_options); }  ///< Set a flag
-#define CLEAR_FLAG(f) { _options &= ~(1<<f); MD_PRINTX("\nClr Flag ", _options); } ///< Reset a flag
+#define SET_FLAG(f)   { _options |= (1<<f);  MD_PRINTX("Set Flag 0x%x",_options); }  ///< Set a flag
+#define CLEAR_FLAG(f) { _options &= ~(1<<f); MD_PRINTX("Clr Flag 0x%x", _options); } ///< Reset a flag
 #define TEST_FLAG(f)  ((_options>>f) & 1)  ///< Test a flag 
 
 #define F_INMENU 0    ///< Flag currently running a menu

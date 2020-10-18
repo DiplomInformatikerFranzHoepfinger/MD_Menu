@@ -34,6 +34,13 @@
 // - LiquidCrystal library for LCD module is a standard Arduino library.
 //
 #include "Menu_Test.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+
+static const char *TAG = "Menu_Test";
+
 
 // Global menu data and definitions
 uint8_t fruit = 2;
@@ -47,96 +54,7 @@ char _txt[] = "192.168.1.101";
 
 MD_Menu::value_t vBuf;  // interface buffer for values
 
-// Menu Headers --------
-const PROGMEM MD_Menu::mnuHeader_t mnuHdr[] =
-{
-  { 10, "MD_Menu",      10, 16, 0 },
-  { 11, "Input Data",   20, 27, 0 },
-  { 12, "Serial Setup", 30, 33, 0 },
-  { 13, "LED Menu",     40, 41, 0 },
-  { 14, "FF Menu",      50, 51, 0 },
-  { 15, "Realtime FB",  60, 64, 0 },
-  { 16, "Output TXT",   70, 70, 0 },
-
-};
-
-// Menu Items ----------
-const PROGMEM MD_Menu::mnuItem_t mnuItm[] =
-{
-  // Starting (Root) menu
-  { 10, "Input Test",  MD_Menu::MNU_MENU, 11 },
-  { 11, "Serial",      MD_Menu::MNU_MENU, 12 },
-  { 12, "LED",         MD_Menu::MNU_MENU, 13 },
-  { 13, "More Menu",   MD_Menu::MNU_MENU, 10 },
-  { 14, "Flip-Flop",   MD_Menu::MNU_MENU, 14 },
-  { 15, "Realtime FB", MD_Menu::MNU_MENU, 15 },
-  { 16, "Output TXT",  MD_Menu::MNU_MENU, 16 },
-
-  // Input Data submenu
-  { 20, "Fruit List", MD_Menu::MNU_INPUT, 10 },
-  { 21, "Boolean",    MD_Menu::MNU_INPUT, 11 },
-  { 22, "Integer 8",  MD_Menu::MNU_INPUT, 12 },
-  { 23, "Integer 16", MD_Menu::MNU_INPUT, 13 },
-  { 24, "Integer 32", MD_Menu::MNU_INPUT, 14 },
-  { 25, "Hex 16",     MD_Menu::MNU_INPUT, 15 },
-  { 26, "Float",      MD_Menu::MNU_INPUT, 16 },
-  { 27, "Eng Units",  MD_Menu::MNU_INPUT, 17 },
-  { 28, "Reset Menu", MD_Menu::MNU_INPUT, 18 },
-  // Serial Setup
-  { 30, "COM Port",  MD_Menu::MNU_INPUT, 30 },
-  { 31, "Speed",     MD_Menu::MNU_INPUT, 31 },
-  { 32, "Parity",    MD_Menu::MNU_INPUT, 32 },
-  { 33, "Stop Bits", MD_Menu::MNU_INPUT, 33 },
-  // LED
-  { 40, "Turn Off", MD_Menu::MNU_INPUT, 40 },
-  { 41, "Turn On",  MD_Menu::MNU_INPUT, 41 },
-  // Flip-flop - boolean controls variable edit
-  { 50, "Flip", MD_Menu::MNU_INPUT, 50 },
-  { 51, "Flop", MD_Menu::MNU_INPUT, 51 },
-  // Realtime feedback variable edit
-  { 60, "Fruit List", MD_Menu::MNU_INPUT_FB, 10 },
-  { 61, "Boolean",    MD_Menu::MNU_INPUT_FB, 11 },
-  { 62, "Integer 8",  MD_Menu::MNU_INPUT_FB, 12 },
-  { 63, "Float",      MD_Menu::MNU_INPUT_FB, 16 },
-  { 64, "Eng Units",  MD_Menu::MNU_INPUT_FB, 17 },
-
-  // Output Data submenu
-  { 70, "Output TXT", MD_Menu::MNU_INPUT, 60 },
-};
-
-// Input Items ---------
-const PROGMEM char listFruit[] = "Apple|Pear|Orange|Banana|Pineapple|Peach";
-const PROGMEM char listCOM[] = "COM1|COM2|COM3|COM4";
-const PROGMEM char listBaud[] = "9600|19200|57600|115200";
-const PROGMEM char listParity[] = "O|E|N";
-const PROGMEM char listStop[] = "0|1";
-const PROGMEM char engUnit[] = "Hz";
-
-const PROGMEM MD_Menu::mnuInput_t mnuInp[] =
-{
-  { 10, "List",     MD_Menu::INP_LIST,  mnuLValueRqst, 6,       0, 0,      0, 0,  0, listFruit }, // shorter and longer list labels
-  { 11, "Bool",     MD_Menu::INP_BOOL,  mnuBValueRqst, 1,       0, 0,      0, 0,  0, nullptr },
-  { 12, "Int8",     MD_Menu::INP_INT,   mnuIValueRqst, 4,    -128, 0,    127, 0, 10, nullptr },
-  { 13, "Int16",    MD_Menu::INP_INT,   mnuIValueRqst, 4,  -32768, 0,  32767, 0, 10, nullptr },  // test field too small
-  { 14, "Int32",    MD_Menu::INP_INT,   mnuIValueRqst, 6,  -66636, 0,  65535, 0, 10, nullptr },
-  { 15, "Hex16",    MD_Menu::INP_INT,   mnuIValueRqst, 4,  0x0000, 0, 0xffff, 0, 16, nullptr },  // test hex display
-  { 16, "Float",    MD_Menu::INP_FLOAT, mnuFValueRqst, 7,  -10000, 0,  99950, 0, 10, nullptr },  // test float number
-  { 17, "Eng Unit", MD_Menu::INP_ENGU,  mnuEValueRqst, 7,       0, 0, 999000, 3, 50, engUnit },  // test engineering units number
-  { 18, "Confirm",  MD_Menu::INP_RUN,   myCode,        0,       0, 0,      0, 0, 10, nullptr },
-
-  { 30, "Port",     MD_Menu::INP_LIST, mnuSerialValueRqst, 4, 0, 0, 0, 0, 0, listCOM },
-  { 31, "Bits/s",   MD_Menu::INP_LIST, mnuSerialValueRqst, 6, 0, 0, 0, 0, 0, listBaud },
-  { 32, "Parity",   MD_Menu::INP_LIST, mnuSerialValueRqst, 1, 0, 0, 0, 0, 0, listParity },
-  { 33, "No. Bits", MD_Menu::INP_LIST, mnuSerialValueRqst, 1, 0, 0, 0, 0, 0, listStop },
-
-  { 40, "Confirm", MD_Menu::INP_RUN, myLEDCode, 0, 0, 0, 0, 0, 0, nullptr },  // test using index in run code
-  { 41, "Confirm", MD_Menu::INP_RUN, myLEDCode, 0, 0, 0, 0, 0, 0, nullptr },
-
-  { 50, "Flip", MD_Menu::INP_INT, mnuFFValueRqst, 4, -128, 0, 127, 0, 10, nullptr },
-  { 51, "Flop", MD_Menu::INP_INT, mnuFFValueRqst, 4, -128, 0, 127, 0, 16, nullptr },
-
-  { 60, "TXT",  	MD_Menu::INP_RUN,   myCode,        0,       0, 0,      0, 0, 10, nullptr },  // test output TXT
-};
+#include "Menu_Structure.h"
 
 // bring it all together in the global menu object
 MD_Menu M(navigation, display,        // user navigation and display
@@ -148,20 +66,20 @@ MD_Menu M(navigation, display,        // user navigation and display
 MD_Menu::value_t *mnuLValueRqst(MD_Menu::mnuId_t id, bool bGet)
 // Value request callback for list selection variable
 {
-  if (id == 10)
+  if (id == id_MAIN_MENU)
   {
     if (bGet)
     {
       vBuf.value = fruit;
-      return(&vBuf);
     }
     else
     {
       fruit = vBuf.value;
-      Serial.print(F("\nList index changed to "));
-      Serial.print(fruit);
+      ESP_LOGI(TAG, "List index changed to %d", fruit);
+
     }
   }
+  return(&vBuf);
 }
 
 MD_Menu::value_t *mnuBValueRqst(MD_Menu::mnuId_t id, bool bGet)
@@ -169,15 +87,14 @@ MD_Menu::value_t *mnuBValueRqst(MD_Menu::mnuId_t id, bool bGet)
 {
   MD_Menu::value_t *r = &vBuf;
 
-  if (id == 11)
+  if (id == id_BOOLEAN)
   {
     if (bGet)
       vBuf.value = bValue;
     else
     {
       bValue = vBuf.value;
-      Serial.print(F("\nBoolean changed to "));
-      Serial.print(bValue);
+      ESP_LOGI(TAG, "Boolean changed to %d", bValue);
     }
   }
   else
@@ -193,37 +110,33 @@ MD_Menu::value_t *mnuIValueRqst(MD_Menu::mnuId_t id, bool bGet)
 
   switch (id)
   {
-    case 12:
+    case id_INTEGER_8:
       if (bGet)
         vBuf.value = int8Value;
       else
       {
         int8Value = vBuf.value;
-        Serial.print(F("\nInt8 value changed to "));
-        Serial.print(int8Value);
+        ESP_LOGI(TAG, "Int8 value changed to %d", int8Value);
       }
       break;
 
-    case 13:
-    case 15:
+    case id_INTEGER_16:
       if (bGet)
         vBuf.value = int16Value;
       else
       {
         int16Value = vBuf.value;
-        Serial.print(F("\nInt16 value changed to "));
-        Serial.print(int16Value);
+        ESP_LOGI(TAG, "Int16 value changed to %d", int16Value);
       }
       break;
 
-    case 14:
+    case id_INTEGER_32:
       if (bGet)
         vBuf.value = int32Value;
       else
       {
         int32Value = vBuf.value;
-        Serial.print(F("\nInt32 value changed to "));
-        Serial.print(int32Value);
+        ESP_LOGI(TAG, "Int32 value changed to %d", int32Value);
       }
       break;
 
@@ -248,9 +161,8 @@ MD_Menu::value_t *mnuSerialValueRqst(MD_Menu::mnuId_t id, bool bGet)
         vBuf.value = port;
       else
       {
-        port - vBuf.value;
-        Serial.print(F("\nPort index="));
-        Serial.print(port);
+        port = vBuf.value;
+        ESP_LOGI(TAG, "Port index=%d", port);
       }
       break;
 
@@ -260,8 +172,7 @@ MD_Menu::value_t *mnuSerialValueRqst(MD_Menu::mnuId_t id, bool bGet)
       else
       {
         speed = vBuf.value;
-        Serial.print(F("\nSpeed index="));
-        Serial.print(speed);
+        ESP_LOGI(TAG, "Speed index=%d", speed);
       }
       break;
 
@@ -271,8 +182,7 @@ MD_Menu::value_t *mnuSerialValueRqst(MD_Menu::mnuId_t id, bool bGet)
       else
       {
         parity = vBuf.value;
-        Serial.print(F("\nParity index="));
-        Serial.print(parity);
+        ESP_LOGI(TAG, "Parity index=%d", parity);
       }
       break;
 
@@ -282,8 +192,7 @@ MD_Menu::value_t *mnuSerialValueRqst(MD_Menu::mnuId_t id, bool bGet)
       else
       {
         stop = vBuf.value;
-        Serial.print(F("\nStop index="));
-        Serial.print(stop);
+        ESP_LOGI(TAG, "Stop index=%d", stop);
       }
       break;
 
@@ -298,7 +207,6 @@ MD_Menu::value_t *mnuSerialValueRqst(MD_Menu::mnuId_t id, bool bGet)
 MD_Menu::value_t *mnuFValueRqst(MD_Menu::mnuId_t id, bool bGet)
 // Value request callback for floating value
 {
-  static int32_t f;
   MD_Menu::value_t *r = &vBuf;
 
   if (id == 16)
@@ -308,8 +216,7 @@ MD_Menu::value_t *mnuFValueRqst(MD_Menu::mnuId_t id, bool bGet)
     else
     {
       floatValue = (vBuf.value / 100.0);
-      Serial.print(F("\nFloat changed to "));
-      Serial.print(floatValue);
+      ESP_LOGI(TAG, "Float changed to %f", floatValue);
     }
   }
   else
@@ -328,10 +235,7 @@ MD_Menu::value_t *mnuEValueRqst(MD_Menu::mnuId_t id, bool bGet)
     else
     {
       float f = (engValue.value / 1000.0);
-      Serial.print(F("\nEng Unit changed to "));
-      Serial.print(f);
-      Serial.print("x10^");
-      Serial.print(engValue.power);
+      ESP_LOGI(TAG, "Eng Unit changed to %f x10^ %d", f, engValue.power);
     }
   }
 
@@ -342,7 +246,6 @@ MD_Menu::value_t *mnuFFValueRqst(MD_Menu::mnuId_t id, bool bGet)
 // Value edit allowed request depends on another value
 {
   static bool gateKeeper = false;
-  static bool b;
   MD_Menu::value_t *r = &vBuf;
 
   switch (id)
@@ -352,7 +255,7 @@ MD_Menu::value_t *mnuFFValueRqst(MD_Menu::mnuId_t id, bool bGet)
       {
         if (gateKeeper)
         {
-          Serial.print(F("\nFlipFlop value blocked"));
+          ESP_LOGI(TAG, "FlipFlop value blocked");
           r = nullptr;
         }
         else
@@ -361,8 +264,7 @@ MD_Menu::value_t *mnuFFValueRqst(MD_Menu::mnuId_t id, bool bGet)
       else
       {
         int8Value = vBuf.value;
-        Serial.print(F("\nFlipFlop value changed to "));
-        Serial.print(int8Value);
+        ESP_LOGI(TAG, "FlipFlop value changed to %d", int8Value);
         gateKeeper = !gateKeeper;
       }
       break;
@@ -372,7 +274,7 @@ MD_Menu::value_t *mnuFFValueRqst(MD_Menu::mnuId_t id, bool bGet)
       {
         if (!gateKeeper)    // reverse the logic of above
         {
-          Serial.print(F("\nFlipFlop value blocked"));
+          ESP_LOGI(TAG, "FlipFlop value blocked");
           r = nullptr;
         }
         else
@@ -381,8 +283,7 @@ MD_Menu::value_t *mnuFFValueRqst(MD_Menu::mnuId_t id, bool bGet)
       else
       {
         int8Value = vBuf.value;
-        Serial.print(F("\nFlipFlop value changed to "));
-        Serial.print(int8Value);
+        ESP_LOGI(TAG, "FlipFlop value changed to %d", int8Value);
         gateKeeper = !gateKeeper;
       }
       break;
@@ -402,18 +303,17 @@ MD_Menu::value_t *mnuFBValueRqst(MD_Menu::mnuId_t id, bool bGet)
 
   switch (id)
   {
-  case 60:
+  case id_INTEGER_8:
     if (bGet)
       vBuf.value = int8Value;
     else
     {
       int8Value = vBuf.value;
-      Serial.print(F("\nUint8 value changed to "));
-      Serial.print(int8Value);
+      ESP_LOGI(TAG, "Uint8 value changed to %d", int8Value);
     }
     break;
 
-  case 61:
+  case id_FRUIT_LIST:
     if (bGet)
     {
       vBuf.value = fruit;
@@ -422,8 +322,7 @@ MD_Menu::value_t *mnuFBValueRqst(MD_Menu::mnuId_t id, bool bGet)
     else
     {
       fruit = vBuf.value;
-      Serial.print(F("\nFruit index changed to "));
-      Serial.print(fruit);
+      ESP_LOGI(TAG, "Fruit index changed to %d", fruit);
     }
     break;
 
@@ -440,18 +339,18 @@ MD_Menu::value_t *myCode(MD_Menu::mnuId_t id, bool bGet)
 {
   switch (id)
   {
-    case 18:
-      Serial.print(F("\nmyCode called id="));
-      Serial.print(id);
-      Serial.print(F(" to "));
-      Serial.print(bGet ? F("GET") : F("SET - reset menu"));
+    case id_RESET_MENU:
+      ESP_LOGI(TAG, "myCode called id= %d to %s", id, bGet ? "GET" : "SET - reset menu");
 
       if (!bGet) M.reset();
       break;
   
-    case 60:
+    case id_OUTPUT_TXT:
       if (bGet) return ((MD_Menu::value_t *)&_txt);
       break;
+
+    default:
+    	break;
   }
   return (nullptr);
 }
@@ -460,20 +359,18 @@ MD_Menu::value_t *myLEDCode(MD_Menu::mnuId_t id, bool bGet)
 // Value request callback for run code input
 // Only use the index here
 {
-  Serial.print(F("\nSwitching LED "));
-  Serial.print(id == 40 ? F("off") : F("on"));
-  digitalWrite(LED_PIN, id == 40 ? LOW : HIGH);
+  ESP_LOGI(TAG, "Switching LED %s",id == 40 ? "off" : "on");
+  //digitalWrite(LED_PIN, id == 40 ? LOW : HIGH);
 
   return(nullptr);
 }
 
-// Standard setup() and loop()
-void setup(void)
+void Menu_Test_Task( void *pvParameters )
 {
-  Serial.begin(BAUD_RATE);
-  Serial.print("\n[Menu_Test Debug]");
+  //Serial.begin(BAUD_RATE);
+  ESP_LOGI(TAG, "[Menu_Test Debug]");
 
-  pinMode(LED_PIN, OUTPUT);
+  //pinMode(LED_PIN, OUTPUT);
 
   display(MD_Menu::DISP_INIT);
   setupNav();
@@ -482,26 +379,37 @@ void setup(void)
   M.setMenuWrap(true);
   M.setAutoStart(AUTO_START);
   M.setTimeout(MENU_TIMEOUT);
+
+
+  for( ;; )
+	{
+	  static bool prevMenuRun = true;
+
+	  // Detect if we need to initiate running normal user code
+	  if (prevMenuRun && !M.isInMenu())
+		ESP_LOGI(TAG, "SWITCHING TO USER'S NORMAL OPERATION\n");
+	  prevMenuRun = M.isInMenu();
+
+	  // If we are not running and not autostart
+	  // check if there is a reason to start the menu
+	  if (!M.isInMenu() && !AUTO_START)
+	  {
+		uint16_t dummy;
+
+		if (navigation(dummy) == MD_Menu::NAV_SEL)
+		  M.runMenu(true);
+	  }
+
+	  M.runMenu();   // just run the menu code
+	  vTaskDelay(10 / portTICK_PERIOD_MS);
+
+	}
 }
 
-void loop(void)
+void InitMenu(void)
 {
-  static bool prevMenuRun = true;
 
-  // Detect if we need to initiate running normal user code
-  if (prevMenuRun && !M.isInMenu())
-    Serial.print("\n\nSWITCHING TO USER'S NORMAL OPERATION\n");
-  prevMenuRun = M.isInMenu();
+	xTaskCreate(Menu_Test_Task, "Menu_Test_Task", 1024 * 4, nullptr, 8, nullptr);
 
-  // If we are not running and not autostart
-  // check if there is a reason to start the menu
-  if (!M.isInMenu() && !AUTO_START)
-  {
-    uint16_t dummy;
 
-    if (navigation(dummy) == MD_Menu::NAV_SEL)
-      M.runMenu(true);
-  }
-
-  M.runMenu();   // just run the menu code
 }
