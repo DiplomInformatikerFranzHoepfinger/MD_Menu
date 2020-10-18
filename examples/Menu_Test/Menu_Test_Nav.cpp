@@ -34,7 +34,7 @@ MD_Menu::userNavAction_t navigation(uint16_t &incDelta)
   {
     case MD_UISwitch::KEY_PRESS:
     {
-      Serial.print(swNav.getKey());
+      ESP_LOGI(TAG, swNav.getKey());
       switch (swNav.getKey())
       {
       case INC_PIN: nav = MD_Menu::NAV_INC; break;
@@ -166,8 +166,8 @@ void setupNav(void)
 MD_Menu::userNavAction_t navigation(uint16_t &incDelta)
 {
   char c = 0;
-  if(Serial.available()>0)
-    c = Serial.read();
+  //if(Serial.available()>0)
+  //  c = Serial.read();
 
   incDelta = 1;
   switch (c)
@@ -180,5 +180,94 @@ MD_Menu::userNavAction_t navigation(uint16_t &incDelta)
   }
 
   return(MD_Menu::NAV_NULL);
+}
+#endif
+
+
+
+
+#if INPUT_GPIO
+// Using GPIO as input
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "driver/gpio.h"
+
+static const gpio_num_t GPIO_INPUT_NAV_ESC  =   GPIO_NUM_36; //36_ESC
+static const gpio_num_t GPIO_INPUT_NAV_DEC  =   GPIO_NUM_38; //38_DOWN
+static const gpio_num_t GPIO_INPUT_NAV_INC  =   GPIO_NUM_17; //17_UP
+static const gpio_num_t GPIO_INPUT_NAV_SEL  =   GPIO_NUM_2;  // 2_OK
+#define GPIO_INPUT_PIN_SEL  ((1ULL<<GPIO_INPUT_NAV_ESC) | (1ULL<<GPIO_INPUT_NAV_DEC) | (1ULL<<GPIO_INPUT_NAV_INC) | (1ULL<<GPIO_INPUT_NAV_SEL))
+#define ESP_INTR_FLAG_DEFAULT 0
+
+static xQueueHandle gpio_evt_queue = NULL;
+
+
+static void IRAM_ATTR gpio_isr_handler(void* arg)
+{
+    uint32_t gpio_num = (uint32_t) arg;
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+}
+
+void setupNav(void)
+{
+	   gpio_config_t io_conf;
+
+	    //interrupt of rising edge
+	    io_conf.intr_type = GPIO_INTR_ANYEDGE;
+	    //bit mask of the pins, use GPIO4/5 here
+	    io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
+	    //set as input mode
+	    io_conf.mode = GPIO_MODE_INPUT;
+	    //disable pull-down mode
+	    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+	    //enable pull-up mode
+	    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+	    gpio_config(&io_conf);
+
+	    //create a queue to handle gpio event from isr
+	    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+	    //start gpio task
+	    //xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
+
+	    //install gpio isr service
+	    //Additionally, `gpio_install_isr_service()` must have been called to initialize the GPIO ISR handler service.
+	    //hook isr handler for specific gpio pin
+	    gpio_isr_handler_add(GPIO_INPUT_NAV_ESC, gpio_isr_handler, (void*) GPIO_INPUT_NAV_ESC);
+	    //hook isr handler for specific gpio pin
+	    gpio_isr_handler_add(GPIO_INPUT_NAV_DEC, gpio_isr_handler, (void*) GPIO_INPUT_NAV_DEC);
+	    //hook isr handler for specific gpio pin
+	    gpio_isr_handler_add(GPIO_INPUT_NAV_INC, gpio_isr_handler, (void*) GPIO_INPUT_NAV_INC);
+	    //hook isr handler for specific gpio pin
+	    gpio_isr_handler_add(GPIO_INPUT_NAV_SEL, gpio_isr_handler, (void*) GPIO_INPUT_NAV_SEL);
+}
+
+MD_Menu::userNavAction_t navigation(uint16_t &incDelta) {
+	gpio_num_t io_num;
+	MD_Menu::userNavAction_t result = MD_Menu::NAV_NULL;
+	if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
+		if (0 == gpio_get_level(io_num)) {
+			switch (io_num){
+			case GPIO_INPUT_NAV_ESC:
+				result = MD_Menu::NAV_ESC;
+				break;
+			case GPIO_INPUT_NAV_DEC:
+				result = MD_Menu::NAV_DEC;
+				break;
+			case GPIO_INPUT_NAV_INC:
+				result = MD_Menu::NAV_INC;
+				break;
+			case GPIO_INPUT_NAV_SEL:
+				result = MD_Menu::NAV_SEL;
+				break;
+			default:
+				break;
+			}
+		}
+		//here do NOT use 1 Command with 30ms, but 3 with 10, as every Receive consumes 1 Bounce.
+		xQueueReceive(gpio_evt_queue, &io_num, 10 / portTICK_RATE_MS); //Debounce 10ms
+		xQueueReceive(gpio_evt_queue, &io_num, 10 / portTICK_RATE_MS); //Debounce 10ms
+		xQueueReceive(gpio_evt_queue, &io_num, 10 / portTICK_RATE_MS); //Debounce 10ms
+	}
+	return (result);
 }
 #endif
