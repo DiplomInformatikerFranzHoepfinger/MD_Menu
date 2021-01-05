@@ -377,12 +377,11 @@ bool MD_Menu::processBool(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   return(endFlag);
 }
 
-char *ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool leadZero = false)
+char *ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool sign, bool leadZero = false)
 // Convert a long to a string right justified with leading spaces
 // in the base specified (up to 16).
 {
   char *ptr = buf + bufLen - 1; // the last element of the buffer
-  bool sign = (v < 0);
   uint32_t t = 0, res = 0;
   uint32_t value = (sign ? -v : v);
 
@@ -473,7 +472,8 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     char sz[INP_PRE_SIZE(mInp) + mInp->fieldWidth + INP_POST_SIZE(mInp) + 1];
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base);
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base, sign);
     strPostamble(sz, mInp);
 
     _cbDisp(DISP_L1, sz);
@@ -555,10 +555,11 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
       divisor *= 10;
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth - (FLOAT_DECIMALS + 1) + 1, _V.value / divisor, 10);
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth - (FLOAT_DECIMALS + 1) + 1, _V.value / divisor, 10, sign);
     sz[strlen(sz) + 1] = '\0';
     sz[strlen(sz)] = DECIMAL_POINT;
-    ltostr(sz + strlen(sz), (FLOAT_DECIMALS + 1), abs(_V.value % divisor), 10, true);
+    ltostr(sz + strlen(sz), (FLOAT_DECIMALS + 1), abs(_V.value % divisor), 10, false, true);
 
     strPostamble(sz, mInp);
 
@@ -683,10 +684,11 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
       divisor *= 10;
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth - (ENGU_DECIMALS + 1) + 1, _V.value / divisor, 10);
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth - (ENGU_DECIMALS + 1) + 1, _V.value / divisor, 10, sign);
     sz[strlen(sz) + 1] = '\0';
     sz[strlen(sz)] = DECIMAL_POINT;
-    ltostr(sz + strlen(sz), (ENGU_DECIMALS + 1), abs(_V.value % divisor), 10, true);
+    ltostr(sz + strlen(sz), (ENGU_DECIMALS + 1), abs(_V.value % divisor), 10, false, true);
 
     strPostamble(sz, mInp);
     sz[strlen(sz) + 1] = '\0';
@@ -784,7 +786,8 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
     char sz[INP_PRE_SIZE(mInp) + mInp->fieldWidth + INP_POST_SIZE(mInp) + 1];
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base);
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base, sign);
     strPostamble(sz, mInp);
 
     _cbDisp(DISP_L1, sz);
