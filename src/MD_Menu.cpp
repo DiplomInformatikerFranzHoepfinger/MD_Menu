@@ -30,7 +30,7 @@ void MD_Menu::reset(void)
 { 
   CLEAR_FLAG(F_INMENU); 
   CLEAR_FLAG(F_INEDIT); 
-  _currMenu = 0; 
+  _currMenu = mnuId_t::id_NULL;
 };
 
 void MD_Menu::setUserNavCallback(cbUserNav cbNav) 
@@ -83,7 +83,7 @@ void MD_Menu::loadMenu(mnuId_t id)
 
   if (id != mnuId_t::no_id)   // look for a menu with that id and load it up
   {
-    for (mnuId_t i = 0; i < _mnuHdrCount; i++)
+    for (mnuId_t i = mnuId_t::id_NULL; i < _mnuHdrCount; i++)
     {
       memcpy(&mh, &_mnuHdr[i], sizeof(mnuHeader_t));
       if (mh.id == id)
@@ -101,7 +101,7 @@ void MD_Menu::loadMenu(mnuId_t id)
 MD_Menu::mnuItem_t* MD_Menu::loadItem(mnuId_t id)
 // Find a copy the input item to the class private buffer
 {
-  for (mnuId_t i = 0; i < _mnuItmCount; i++)
+  for (mnuId_t i = mnuId_t::id_NULL; i < _mnuItmCount; i++)
   {
     memcpy(&_mnuBufItem, &_mnuItm[i], sizeof(mnuItem_t));
     if (_mnuBufItem.id == id)
@@ -114,7 +114,7 @@ MD_Menu::mnuItem_t* MD_Menu::loadItem(mnuId_t id)
 MD_Menu::mnuInput_t* MD_Menu::loadInput(mnuId_t id)
 // Find a copy the input item to the class private buffer
 {
-  for (mnuId_t i = 0; i < _mnuInpCount; i++)
+  for (mnuId_t i = mnuId_t::id_NULL; i < _mnuInpCount; i++)
   {
     memcpy(&_mnuBufInput, &_mnuInp[i], sizeof(mnuInput_t));
     if (_mnuBufInput.id == id)
@@ -717,7 +717,7 @@ bool MD_Menu::processRun(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 
     if (_pValue == nullptr) // no confirmation required, just run user code
     {
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
       return(true);
     }
     else   // confirmation required
@@ -749,7 +749,7 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
   {
   case NAV_NULL:    // this is to get the value from the user code
   {
-    _pValue = mInp->cbVR(mInp->id, true);
+    _pValue = mInp->cbVR(mInp->id, DO_GET);
 
     if (_pValue == nullptr)
     {
@@ -770,7 +770,7 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
 
   case NAV_SEL:
     _pValue->value = _V.value;
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     endFlag = true;
     break;
 
@@ -793,7 +793,7 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
     if (rtfb)
     {
       _pValue->value = _V.value;
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
     }
   }
 
@@ -1007,7 +1007,7 @@ bool MD_Menu::runMenu(bool bStart)
   if (bStart)   // start the menu
   {
     MD_PRINTS("runMenu: Starting menu");
-    _currMenu = 0;
+    _currMenu = mnuId_t::id_NULL;
     loadMenu();
     handleMenu(true);
   }
