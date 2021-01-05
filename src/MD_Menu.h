@@ -341,6 +341,13 @@ public:
     int8_t  power;   ///< the power of 10 (multiple of 3 eg, -3 (milli) 0, 3 (kilo), 6 (Mega))
   };
 
+
+  enum bGet_t
+  {
+    DO_SET,   ///< Set a Value
+    DO_GET,   ///< Get a Value
+  };
+
   /**
   * Data input/output function prototype
   *
@@ -350,7 +357,7 @@ public:
   * data identified by the ID. Return nullptr to stop the menu from
   * editing the value.
   */
-  typedef value_t*(*cbValueRequest)(mnuId_t id, bool bGet);
+  typedef value_t*(*cbValueRequest)(mnuId_t id, enum bGet_t bGet);
 
   /**
   * Input field definition
