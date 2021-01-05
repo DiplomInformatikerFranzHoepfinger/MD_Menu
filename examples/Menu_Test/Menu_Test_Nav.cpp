@@ -244,7 +244,8 @@ void setupNav(void)
 MD_Menu::userNavAction_t navigation(uint16_t &incDelta) {
 	gpio_num_t io_num;
 	MD_Menu::userNavAction_t result = MD_Menu::NAV_NULL;
-	if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
+	if (xQueueReceive(gpio_evt_queue, &io_num, 1000 / portTICK_RATE_MS)) //1s wait if no Input there !
+	{
 		if (0 == gpio_get_level(io_num)) {
 			switch (io_num){
 			case GPIO_INPUT_NAV_ESC:
@@ -264,6 +265,7 @@ MD_Menu::userNavAction_t navigation(uint16_t &incDelta) {
 			}
 		}
 		//here do NOT use 1 Command with 30ms, but 3 with 10, as every Receive consumes 1 Bounce.
+		//only if we got something.
 		xQueueReceive(gpio_evt_queue, &io_num, 10 / portTICK_RATE_MS); //Debounce 10ms
 		xQueueReceive(gpio_evt_queue, &io_num, 10 / portTICK_RATE_MS); //Debounce 10ms
 		xQueueReceive(gpio_evt_queue, &io_num, 10 / portTICK_RATE_MS); //Debounce 10ms
