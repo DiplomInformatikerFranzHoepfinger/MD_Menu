@@ -343,7 +343,7 @@ MD_Menu::value_t *mnuFloatValueRqst(MD_Menu::mnuId_t id, bool bGet)
   if (id == 16)
   {
     if (bGet)
-      vBuf.value = (uint32_t)(floatValue * 100.0);
+      vBuf.value = (int32_t)(floatValue * 100.0);
     else
     {
       floatValue = (vBuf.value / 100.0);
