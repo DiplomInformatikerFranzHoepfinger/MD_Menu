@@ -251,14 +251,15 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
     {
       listId_t listSize = getListCount(mInp->pList);
 
-      if (_V.value > 0)
+      if (_V.value > 0 && _V.value - 1 >= mInp->range[MIN].value)
       {
         _V.value--;
         update = true;
       }
-      else if (_V.value == 0 && TEST_FLAG(F_MENUWRAP))
+      else if (_V.value == mInp->range[MIN].value && TEST_FLAG(F_MENUWRAP))
       {
-        _V.value = listSize - 1;
+    	assert(mInp->range[MAX].value <= listSize - 1 );
+        _V.value = mInp->range[MAX].value;    // wrap around to max value
         update = true;
       }
     }
@@ -268,14 +269,15 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
     {
       listId_t listSize = getListCount(mInp->pList);
 
-      if (_V.value < listSize - 1)
+      if (_V.value < listSize - 1  && _V.value + 1 <= mInp->range[MAX].value)
       {
         _V.value++;
         update = true;
       }
-      else if (_V.value == listSize - 1 && TEST_FLAG(F_MENUWRAP))
+      else if (_V.value == mInp->range[MAX].value && TEST_FLAG(F_MENUWRAP))
       {
-        _V.value = 0;
+    	assert(mInp->range[MIN].value >= 0 );
+        _V.value = mInp->range[MIN].value;    // wrap around to min value
         update = true;
       }
     }
