@@ -249,7 +249,7 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 
   case NAV_DEC:
     {
-      listId_t size = getListCount(mInp->pList);
+      listId_t listSize = getListCount(mInp->pList);
 
       if (_V.value > 0)
       {
@@ -258,7 +258,7 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
       }
       else if (_V.value == 0 && TEST_FLAG(F_MENUWRAP))
       {
-        _V.value = size - 1;
+        _V.value = listSize - 1;
         update = true;
       }
     }
@@ -266,14 +266,14 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 
   case NAV_INC:
     {
-      listId_t size = getListCount(mInp->pList);
+      listId_t listSize = getListCount(mInp->pList);
 
-      if (_V.value < size - 1)
+      if (_V.value < listSize - 1)
       {
         _V.value++;
         update = true;
       }
-      else if (_V.value == size - 1 && TEST_FLAG(F_MENUWRAP))
+      else if (_V.value == listSize - 1 && TEST_FLAG(F_MENUWRAP))
       {
         _V.value = 0;
         update = true;
@@ -378,7 +378,7 @@ bool MD_Menu::processBool(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   return(endFlag);
 }
 
-char *ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool leadZero = false)
+char *ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool sign, bool leadZero = false)
 // Convert a long to a string right justified with leading spaces
 // in the base specified (up to 16).
 {
@@ -474,7 +474,7 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
 
     strPreamble(sz, mInp);
     bool sign = (_V.value < 0);
-    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base);
+    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base, sign);
     strPostamble(sz, mInp);
 
     _cbDisp(DISP_L1, sz);
@@ -557,7 +557,7 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
 
     strPreamble(sz, mInp);
     bool sign = (_V.value < 0);
-    ltostr(sz + strlen(sz), mInp->fieldWidth - (FLOAT_DECIMALS + 1) + 1, _V.value / divisor, 10);
+    ltostr(sz + strlen(sz), mInp->fieldWidth - (FLOAT_DECIMALS + 1) + 1, _V.value / divisor, 10, sign);
     sz[strlen(sz) + 1] = '\0';
     sz[strlen(sz)] = DECIMAL_POINT;
     ltostr(sz + strlen(sz), (FLOAT_DECIMALS + 1), abs(_V.value % divisor), 10, false, true);
@@ -689,7 +689,7 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
 
     strPreamble(sz, mInp);
     bool sign = (_V.value < 0);
-    ltostr(sz + strlen(sz), mInp->fieldWidth - (ENGU_DECIMALS + 1) + 1, _V.value / divisor, 10);
+    ltostr(sz + strlen(sz), mInp->fieldWidth - (ENGU_DECIMALS + 1) + 1, _V.value / divisor, 10, sign);
     sz[strlen(sz) + 1] = '\0';
     sz[strlen(sz)] = DECIMAL_POINT;
     ltostr(sz + strlen(sz), (ENGU_DECIMALS + 1), abs(_V.value % divisor), 10, false, true);
@@ -791,7 +791,7 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
 
     strPreamble(sz, mInp);
     bool sign = (_V.value < 0);
-    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base);
+    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base, sign);
     strPostamble(sz, mInp);
 
     _cbDisp(DISP_L1, sz);
