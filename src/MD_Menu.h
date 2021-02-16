@@ -408,6 +408,7 @@ public:
     value_t 		range[2];   ///< definition for min/max for input range at [0]/[1]
     uint8_t 		base;       ///< number base for display (2 through 16) or floating increment in 1/100 units
     const char *	pList;      ///< pointer to list string or engineering units string in PROGMEM
+    uint16_t 		incDelta;	///< Delta for Input. normally 1, but in some cases higher to speed input.
   };
 
   /**

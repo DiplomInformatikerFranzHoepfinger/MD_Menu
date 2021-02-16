@@ -108,24 +108,24 @@ const MD_Menu::mnuItem_t mnuItm[] =
 
 const MD_Menu::mnuInput_t mnuInp[] =
 {
-//  Identifier,    	Label		action	    		Callback 		Width  min			max 		base  list
-  { id_FRUIT_LIST, 	EMPTY, 		MD_Menu::INP_LIST,  mnuLValueRqst, 		6,  0, 		0,  0, 		0,   0,   listFruit 	}, // shorter and longer list labels
-  { id_BOOLEAN, 	EMPTY,    	MD_Menu::INP_BOOL,  mnuBValueRqst, 		1,  0, 		0,  0, 		0,   0,   nullptr 		},
-  { id_INTEGER_8, 	EMPTY,  	MD_Menu::INP_INT,   mnuIValueRqst, 		4, -128, 	0,  127, 	0,  10,   nullptr 		},
-  { id_INTEGER_16, 	EMPTY, 		MD_Menu::INP_INT,   mnuIValueRqst, 		4, -32768, 	0,  32767, 	0,  10,   nullptr 		},  // test field too small
-  { id_INTEGER_32, 	EMPTY,		MD_Menu::INP_INT,   mnuIValueRqst, 		6, -66636, 	0,  65535, 	0,  10,   nullptr		},
-  { id_HEX_16, 		EMPTY,    	MD_Menu::INP_INT,   mnuIValueRqst, 		4,  0x0000, 0,  0xffff, 0,  16,   nullptr 		},  // test hex display
-  { id_FLOAT, 		EMPTY, 		MD_Menu::INP_FLOAT, mnuFValueRqst, 		7, -10000, 	0,	99950, 	0,  10,   nullptr 		},  // test float number
-  { id_ENG_UNITS, 	ENG_UNITS, 	MD_Menu::INP_ENGU,  mnuEValueRqst, 		7,  0, 		0,  999000, 3,  50,   engUnit 		},  // test engineering units number
-  { id_COM_PORT, 	COM_PORT,   MD_Menu::INP_LIST,  mnuSerialValueRqst, 4,  0, 		0,  0, 		0,   0,   listCOM 		},
-  { id_SPEED, 		SPEED,   	MD_Menu::INP_LIST,  mnuSerialValueRqst, 6,  0, 		0,  0, 		0,   0,   listBaud 		},
-  { id_PARITY,		PARITY, 	MD_Menu::INP_LIST,  mnuSerialValueRqst, 1,  0, 		0,	0, 		0,   0,   listParity 	},
-  { id_STOP_BITS, 	STOP_BITS, 	MD_Menu::INP_LIST,  mnuSerialValueRqst, 1,  0, 		0,  0, 		0,   0,   listStop 		},
-  { id_TURN_OFF, 	TURN_OFF, 	MD_Menu::INP_RUN,   myLEDCode, 			0,  0, 		0,  0, 		0,   0,   nullptr 		},  // test using index in run code
-  { id_TURN_ON, 	TURN_ON, 	MD_Menu::INP_RUN,   myLEDCode, 			0,  0, 		0,  0, 		0,   0,   nullptr 		},
-  { id_FLIP, 		FLIP, 		MD_Menu::INP_INT,   mnuFFValueRqst, 	4, -128, 	0,  127,	0,  10,   nullptr 		},
-  { id_FLOP, 		FLOP, 		MD_Menu::INP_INT,   mnuFFValueRqst, 	4, -128, 	0,  127, 	0,  16,   nullptr 		},
-  { id_OUTPUT_TXT, 	OUTPUT_TXT, MD_Menu::INP_RUN,   myCode,        		0,  0, 		0,  0, 		0,  10,   nullptr 		},  // test output TXT
+//  Identifier,    	Label		action	    		Callback 		Width  min			max 		base  list			delta
+  { id_FRUIT_LIST, 	EMPTY, 		MD_Menu::INP_LIST,  mnuLValueRqst, 		6,  0, 		0,  0, 		0,   0,   listFruit 	,1}, // shorter and longer list labels
+  { id_BOOLEAN, 	EMPTY,    	MD_Menu::INP_BOOL,  mnuBValueRqst, 		1,  0, 		0,  0, 		0,   0,   nullptr 		,1},
+  { id_INTEGER_8, 	EMPTY,  	MD_Menu::INP_INT,   mnuIValueRqst, 		4, -128, 	0,  127, 	0,  10,   nullptr 		,1},
+  { id_INTEGER_16, 	EMPTY, 		MD_Menu::INP_INT,   mnuIValueRqst, 		4, -32768, 	0,  32767, 	0,  10,   nullptr 		,1},  // test field too small
+  { id_INTEGER_32, 	EMPTY,		MD_Menu::INP_INT,   mnuIValueRqst, 		6, -66636, 	0,  65535, 	0,  10,   nullptr		,1},
+  { id_HEX_16, 		EMPTY,    	MD_Menu::INP_INT,   mnuIValueRqst, 		4,  0x0000, 0,  0xffff, 0,  16,   nullptr 		,1},  // test hex display
+  { id_FLOAT, 		EMPTY, 		MD_Menu::INP_FLOAT, mnuFValueRqst, 		7, -10000, 	0,	99950, 	0,  10,   nullptr 		,1},  // test float number
+  { id_ENG_UNITS, 	ENG_UNITS, 	MD_Menu::INP_ENGU,  mnuEValueRqst, 		7,  0, 		0,  999000, 3,  50,   engUnit 		,1},  // test engineering units number
+  { id_COM_PORT, 	COM_PORT,   MD_Menu::INP_LIST,  mnuSerialValueRqst, 4,  0, 		0,  0, 		0,   0,   listCOM 		,1},
+  { id_SPEED, 		SPEED,   	MD_Menu::INP_LIST,  mnuSerialValueRqst, 6,  0, 		0,  0, 		0,   0,   listBaud 		,1},
+  { id_PARITY,		PARITY, 	MD_Menu::INP_LIST,  mnuSerialValueRqst, 1,  0, 		0,	0, 		0,   0,   listParity 	,1},
+  { id_STOP_BITS, 	STOP_BITS, 	MD_Menu::INP_LIST,  mnuSerialValueRqst, 1,  0, 		0,  0, 		0,   0,   listStop 		,1},
+  { id_TURN_OFF, 	TURN_OFF, 	MD_Menu::INP_RUN,   myLEDCode, 			0,  0, 		0,  0, 		0,   0,   nullptr 		,1},  // test using index in run code
+  { id_TURN_ON, 	TURN_ON, 	MD_Menu::INP_RUN,   myLEDCode, 			0,  0, 		0,  0, 		0,   0,   nullptr 		,1},
+  { id_FLIP, 		FLIP, 		MD_Menu::INP_INT,   mnuFFValueRqst, 	4, -128, 	0,  127,	0,  10,   nullptr 		,1},
+  { id_FLOP, 		FLOP, 		MD_Menu::INP_INT,   mnuFFValueRqst, 	4, -128, 	0,  127, 	0,  16,   nullptr 		,1},
+  { id_OUTPUT_TXT, 	OUTPUT_TXT, MD_Menu::INP_RUN,   myCode,        		0,  0, 		0,  0, 		0,  10,   nullptr 		,1},  // test output TXT
 };
 
 
