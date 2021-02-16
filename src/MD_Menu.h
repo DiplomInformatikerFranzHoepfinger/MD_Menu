@@ -680,12 +680,12 @@ private:
 
   // Process the different types of input requests
   // All return true when edit changes are finished (SELECT or ESCAPE).
-  bool processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
-  bool processBool(userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
-  bool processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint16_t incDelta);
-  bool processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint16_t incDelta);
-  bool processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint16_t incDelta);
-  bool processRun(userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
-  bool processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool rtfb);
+  bool processList(	userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
+  bool processBool(	userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
+  bool processInt(	userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
+  bool processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
+  bool processEng(	userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
+  bool processRun(	userNavAction_t nav, mnuInput_t *mInp, bool rtfb);
+  bool processExt(	userNavAction_t nav, mnuInput_t* mInp, bool init, bool rtfb);
 };
 

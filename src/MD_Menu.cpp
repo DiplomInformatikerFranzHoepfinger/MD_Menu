@@ -378,7 +378,7 @@ bool MD_Menu::processBool(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   return(endFlag);
 }
 
-char *ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool sign, bool leadZero = false)
+char *MD_Menu::ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool sign, bool leadZero)
 // Convert a long to a string right justified with leading spaces
 // in the base specified (up to 16).
 {
@@ -415,7 +415,7 @@ char *ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool sign, bool
   return(buf);
 }
 
-bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint16_t incDelta)
+bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 // Processing for Integer (all sizes) value input
 // Return true when the edit cycle is completed
 {
@@ -442,16 +442,16 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     break;
 
   case NAV_INC:
-    if (_V.value + incDelta <= mInp->range[1].value)
-      _V.value += incDelta;
+    if (_V.value + mInp->incDelta <= mInp->range[1].value)
+      _V.value += mInp->incDelta;
     else
       _V.value = mInp->range[0].value;    // wrap around to min value
     update = true;
     break;
 
   case NAV_DEC:
-    if (_V.value - incDelta >= mInp->range[0].value)
-      _V.value -= incDelta;
+    if (_V.value - mInp->incDelta >= mInp->range[0].value)
+      _V.value -= mInp->incDelta;
     else
       _V.value = mInp->range[1].value;    // wrap around to max value
     update = true;
@@ -490,7 +490,7 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
   return(endFlag);
 }
 
-bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint16_t incDelta)
+bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 // Processing for Floating number representation value input
 // The number is actually a uint32, where the last FLOAT_DECIMALS digits are taken
 // to be fractional part of the floating number. For all purposes, this number is a long
@@ -521,16 +521,16 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
   break;
 
   case NAV_INC:
-    if (_V.value + (incDelta * mInp->base) <= mInp->range[1].value)
-      _V.value += (incDelta * mInp->base);
+    if (_V.value + (mInp->incDelta * mInp->base) <= mInp->range[1].value)
+      _V.value += (mInp->incDelta * mInp->base);
     else
       _V.value = mInp->range[1].value;
     update = true;
     break;
 
   case NAV_DEC:
-    if (_V.value - (incDelta * mInp->base) >= mInp->range[0].value)
-      _V.value -= (incDelta * mInp->base);
+    if (_V.value - (mInp->incDelta * mInp->base) >= mInp->range[0].value)
+      _V.value -= (mInp->incDelta * mInp->base);
     else
       _V.value = mInp->range[0].value;
     update = true;
@@ -577,7 +577,7 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
   return(endFlag);
 }
 
-bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint16_t incDelta)
+bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 // Processing for Engineering Units number value input
 // The number is actually a uint32, where the last ENGU_DECIMALS digits are taken
 // to be fractional part of the floating number. For all purposes, this number is a long
@@ -611,17 +611,17 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
   break;
 
   case NAV_INC:
-    if ((_V.value + (incDelta * mInp->base))/1000 < 1000)  // still within the same prefix range
+    if ((_V.value + (mInp->incDelta * mInp->base))/1000 < 1000)  // still within the same prefix range
     {
       if ((_V.power < mInp->range[1].power) ||
-         (_V.power == mInp->range[1].power && _V.value + (incDelta * mInp->base) <= mInp->range[1].value))
-        _V.value += (incDelta * mInp->base);
+         (_V.power == mInp->range[1].power && _V.value + (mInp->incDelta * mInp->base) <= mInp->range[1].value))
+        _V.value += (mInp->incDelta * mInp->base);
       else
         _V.value = mInp->range[1].value;
     }
     else  // moved into the next range
     {
-      _V.value += (incDelta * mInp->base);
+      _V.value += (mInp->incDelta * mInp->base);
       _V.value /= 1000;
       _V.power += 3;
       if ((_V.power > mInp->range[1].power) ||
@@ -635,11 +635,11 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     break;
 
   case NAV_DEC:
-    if ((_V.value - (incDelta * mInp->base)) / 1000 > 0)  // still within the same prefix range
+    if ((_V.value - (mInp->incDelta * mInp->base)) / 1000 > 0)  // still within the same prefix range
     {
       if ((_V.power > mInp->range[0].power) ||
-         (_V.power == mInp->range[0].power && _V.value - (incDelta * mInp->base) >= mInp->range[0].value))
-        _V.value -= (incDelta * mInp->base);
+         (_V.power == mInp->range[0].power && _V.value - (mInp->incDelta * mInp->base) >= mInp->range[0].value))
+        _V.value -= (mInp->incDelta * mInp->base);
       else
         _V.value = mInp->range[0].value;
     }
@@ -650,7 +650,7 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
         _V.value *= 1000;
         _V.power -= 3;
       }
-      _V.value -= (incDelta * mInp->base);    // adjust the value
+      _V.value -= (mInp->incDelta * mInp->base);    // adjust the value
 
       if (_V.power == mInp->range[0].power && _V.value <= mInp->range[0].value)
       {
@@ -810,9 +810,8 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
 void MD_Menu::handleInput(bool bNew)
 {
   bool ended = false;
-  uint16_t incDelta = 1;
-  mnuItem_t *mi;
-  mnuInput_t *me;
+  mnuItem_t *mi = nullptr;
+  mnuInput_t *me = nullptr;
 
   if (bNew)
   {
@@ -829,19 +828,24 @@ void MD_Menu::handleInput(bool bNew)
 
       switch (me->action)
       {
-      case INP_LIST:  ended = processList(NAV_NULL, me, mi->action == MNU_INPUT_FB);            break;
-      case INP_BOOL:  ended = processBool(NAV_NULL, me, mi->action == MNU_INPUT_FB);            break;
-      case INP_INT:   ended = processInt(NAV_NULL, me, mi->action == MNU_INPUT_FB, incDelta);   break;
-      case INP_FLOAT: ended = processFloat(NAV_NULL, me, mi->action == MNU_INPUT_FB, incDelta); break;
-      case INP_ENGU:  ended = processEng(NAV_NULL, me, mi->action == MNU_INPUT_FB, incDelta);   break;
-      case INP_RUN:   ended = processRun(NAV_NULL, me, mi->action == MNU_INPUT_FB);             break;
-      case INP_EXT:   ended = processExt(NAV_NULL, me, true, mi->action == MNU_INPUT_FB);       break;
+      case INP_LIST:  ended = processList(	NAV_NULL, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_BOOL:  ended = processBool(	NAV_NULL, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_INT:   ended = processInt(	NAV_NULL, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_FLOAT: ended = processFloat(	NAV_NULL, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_ENGU:  ended = processEng(	NAV_NULL, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_RUN:   ended = processRun(	NAV_NULL, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_EXT:   ended = processExt(	NAV_NULL, me, true, mi->action == MNU_INPUT_FB);   break;
       }
     }
   }
   else
   {
-    userNavAction_t nav = _cbNav(incDelta);
+	uint16_t incDelta = 1;
+	if (me != nullptr)
+	{
+	    incDelta = me->incDelta;
+	}
+	userNavAction_t nav = _cbNav(incDelta);
     mi = loadItem(_mnuStack[_currMenu].idItmCurr);
     me = loadInput(mi->actionId);
 
@@ -854,13 +858,13 @@ void MD_Menu::handleInput(bool bNew)
 
       switch (me->action)
       {
-      case INP_LIST:  ended = processList(nav, me, mi->action == MNU_INPUT_FB);            break;
-      case INP_BOOL:  ended = processBool(nav, me, mi->action == MNU_INPUT_FB);            break;
-      case INP_INT:   ended = processInt(nav, me, mi->action == MNU_INPUT_FB, incDelta);   break;
-      case INP_FLOAT: ended = processFloat(nav, me, mi->action == MNU_INPUT_FB, incDelta); break;
-      case INP_ENGU:  ended = processEng(nav, me, mi->action == MNU_INPUT_FB, incDelta);   break;
-      case INP_RUN:   ended = processRun(nav, me, mi->action == MNU_INPUT_FB);             break;
-      case INP_EXT:   ended = processExt(nav, me, false, mi->action == MNU_INPUT_FB);      break;
+      case INP_LIST:  ended = processList(	nav, me,		mi->action == MNU_INPUT_FB);   break;
+      case INP_BOOL:  ended = processBool(	nav, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_INT:   ended = processInt(	nav, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_FLOAT: ended = processFloat(	nav, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_ENGU:  ended = processEng(	nav, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_RUN:   ended = processRun(	nav, me, 		mi->action == MNU_INPUT_FB);   break;
+      case INP_EXT:   ended = processExt(	nav, me, false, mi->action == MNU_INPUT_FB);   break;
       }
     }
   }
