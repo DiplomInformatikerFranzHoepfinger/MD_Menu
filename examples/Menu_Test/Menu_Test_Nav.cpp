@@ -166,7 +166,7 @@ void setupNav(void)
 
 MD_Menu::userNavAction_t navigation(uint16_t &incDelta)
 {
-  char c = 0;
+  char c = '\0';
   //if(Serial.available()>0)
   //  c = Serial.read();
 
