@@ -442,18 +442,18 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
     break;
 
   case NAV_INC:
-    if (_V.value + mInp->incDelta <= mInp->range[1].value)
+    if (_V.value + mInp->incDelta <= mInp->range[MAX].value)
       _V.value += mInp->incDelta;
     else
-      _V.value = mInp->range[0].value;    // wrap around to min value
+      _V.value = mInp->range[MIN].value;    // wrap around to min value
     update = true;
     break;
 
   case NAV_DEC:
-    if (_V.value - mInp->incDelta >= mInp->range[0].value)
+    if (_V.value - mInp->incDelta >= mInp->range[MIN].value)
       _V.value -= mInp->incDelta;
     else
-      _V.value = mInp->range[1].value;    // wrap around to max value
+      _V.value = mInp->range[MAX].value;    // wrap around to max value
     update = true;
     break;
 
@@ -521,18 +521,18 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   break;
 
   case NAV_INC:
-    if (_V.value + (mInp->incDelta * mInp->base) <= mInp->range[1].value)
+    if (_V.value + (mInp->incDelta * mInp->base) <= mInp->range[MAX].value)
       _V.value += (mInp->incDelta * mInp->base);
     else
-      _V.value = mInp->range[1].value;
+      _V.value = mInp->range[MAX].value;
     update = true;
     break;
 
   case NAV_DEC:
-    if (_V.value - (mInp->incDelta * mInp->base) >= mInp->range[0].value)
+    if (_V.value - (mInp->incDelta * mInp->base) >= mInp->range[MIN].value)
       _V.value -= (mInp->incDelta * mInp->base);
     else
-      _V.value = mInp->range[0].value;
+      _V.value = mInp->range[MIN].value;
     update = true;
     break;
 
@@ -613,22 +613,22 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   case NAV_INC:
     if ((_V.value + (mInp->incDelta * mInp->base))/1000 < 1000)  // still within the same prefix range
     {
-      if ((_V.power < mInp->range[1].power) ||
-         (_V.power == mInp->range[1].power && _V.value + (mInp->incDelta * mInp->base) <= mInp->range[1].value))
+      if ((_V.power < mInp->range[MAX].power) ||
+         (_V.power == mInp->range[MAX].power && _V.value + (mInp->incDelta * mInp->base) <= mInp->range[MAX].value))
         _V.value += (mInp->incDelta * mInp->base);
       else
-        _V.value = mInp->range[1].value;
+        _V.value = mInp->range[MAX].value;
     }
     else  // moved into the next range
     {
       _V.value += (mInp->incDelta * mInp->base);
       _V.value /= 1000;
       _V.power += 3;
-      if ((_V.power > mInp->range[1].power) ||
-         (_V.power == mInp->range[1].power && _V.value >= mInp->range[1].value))
+      if ((_V.power > mInp->range[MAX].power) ||
+         (_V.power == mInp->range[MAX].power && _V.value >= mInp->range[MAX].value))
       {
-        _V.value = mInp->range[1].value;
-        _V.power = mInp->range[1].power;
+        _V.value = mInp->range[MAX].value;
+        _V.power = mInp->range[MAX].power;
       }
     }
     update = true;
@@ -637,25 +637,25 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   case NAV_DEC:
     if ((_V.value - (mInp->incDelta * mInp->base)) / 1000 > 0)  // still within the same prefix range
     {
-      if ((_V.power > mInp->range[0].power) ||
-         (_V.power == mInp->range[0].power && _V.value - (mInp->incDelta * mInp->base) >= mInp->range[0].value))
+      if ((_V.power > mInp->range[MIN].power) ||
+         (_V.power == mInp->range[MIN].power && _V.value - (mInp->incDelta * mInp->base) >= mInp->range[MIN].value))
         _V.value -= (mInp->incDelta * mInp->base);
       else
-        _V.value = mInp->range[0].value;
+        _V.value = mInp->range[MIN].value;
     }
     else  // moved into the previous range, if there is one
     {
-      if (_V.power > mInp->range[0].power)    // not yet in lowest power range, adjust the range
+      if (_V.power > mInp->range[MIN].power)    // not yet in lowest power range, adjust the range
       {
         _V.value *= 1000;
         _V.power -= 3;
       }
       _V.value -= (mInp->incDelta * mInp->base);    // adjust the value
 
-      if (_V.power == mInp->range[0].power && _V.value <= mInp->range[0].value)
+      if (_V.power == mInp->range[MIN].power && _V.value <= mInp->range[MIN].value)
       {
-        _V.value = mInp->range[0].value;
-        _V.power = mInp->range[0].power;
+        _V.value = mInp->range[MIN].value;
+        _V.power = mInp->range[MIN].power;
       }
     }
     update = true;

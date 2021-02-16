@@ -391,6 +391,13 @@ public:
   */
   typedef value_t*(*cbValueRequest)(mnuId_t id, enum bGet_t bGet);
 
+  enum b_range_t
+  {
+    MIN,   	///< MIN Range
+    MAX, 	///< MAX Range
+	MINMAX_cnt
+  };
+
   /**
   * Input field definition
   *
@@ -405,7 +412,7 @@ public:
     inputAction_t 	action;     ///< Type of action required for this value
     cbValueRequest 	cbVR;   	///< Callback function to get/set the value
     uint8_t 		fieldWidth; ///< Width of the displayed field between delimiters
-    value_t 		range[2];   ///< definition for min/max for input range at [0]/[1]
+    value_t 		range[MINMAX_cnt];   ///< definition for min/max for input range at [0]/[1]
     uint8_t 		base;       ///< number base for display (2 through 16) or floating increment in 1/100 units
     const char *	pList;      ///< pointer to list string or engineering units string in PROGMEM
     uint16_t 		incDelta;	///< Delta for Input. normally 1, but in some cases higher to speed input.
