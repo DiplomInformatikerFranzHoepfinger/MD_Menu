@@ -1,4 +1,8 @@
 #include "Menu_Test.h"
+#include "esp_log.h"
+
+
+static const char *TAG = "Menu_Test_Disp";
 
 // Routines for specific display hardware, defining
 // - Appropriate header files
@@ -16,21 +20,19 @@ bool display(MD_Menu::userDisplayAction_t action, char *msg)
   switch (action)
   {
   case MD_Menu::DISP_INIT:
-    Serial.begin(BAUD_RATE);
+    //Serial.begin(BAUD_RATE);
     break;
     
   case MD_Menu::DISP_CLEAR:
-    Serial.print("\n-> CLS");
+    ESP_LOGI(TAG, "-> CLS");
     break;
 
   case MD_Menu::DISP_L0:
-    Serial.print("\n0> ");
-    Serial.print(msg);
+    ESP_LOGI(TAG, "0> %s", msg);
     break;
 
   case MD_Menu::DISP_L1:
-    Serial.print("\n1> ");
-    Serial.print(msg);
+    ESP_LOGI(TAG, "1> %s", msg);
     break;
   }
 
@@ -38,8 +40,83 @@ bool display(MD_Menu::userDisplayAction_t action, char *msg)
 }
 #endif
 
-#if DISPLAY_LCD_SHIELD
-// Output display to a 2 line LCD display. 
+#if DISPLAY_SSD1306
+
+#include "ssd1306.h"
+#include "ssd1306_draw.h"
+#include "ssd1306_font.h"
+#include "ssd1306_default_if.h"
+
+
+#define USE_I2C_DISPLAY
+
+static const int I2CDisplayAddress = 0x3C;
+static const int I2CDisplayWidth = 128;
+static const int I2CDisplayHeight = 64;
+static const int I2CResetPin = 16; // Board WiFi LoRa 32 (V2) https://heltec.org/project/wifi-lora-32/
+
+
+struct SSD1306_Device I2CDisplay;
+
+bool DefaultBusInit(void) {
+
+	assert(SSD1306_I2CMasterInitDefault( ) == true);
+	assert(SSD1306_I2CMasterAttachDisplayDefault( &I2CDisplay, I2CDisplayWidth, I2CDisplayHeight, I2CDisplayAddress, I2CResetPin ) == true);
+	SSD1306_SetHFlip( &I2CDisplay, true );
+	SSD1306_SetVFlip( &I2CDisplay, true );
+	return true;
+}
+
+void DrawL0(const char *msg) {
+	SSD1306_SetFont(&I2CDisplay, &Font_droid_sans_mono_13x24);
+	SSD1306_FontDrawAnchoredString(&I2CDisplay, TextAnchor_NorthWest, msg,	SSD_COLOR_WHITE);
+	SSD1306_Update(&I2CDisplay);
+	ESP_LOGI(TAG, "0> %s", msg);
+}
+
+void DrawL1(const char *msg) {
+	SSD1306_SetFont(&I2CDisplay, &Font_droid_sans_mono_7x13);
+	SSD1306_FontDrawAnchoredString(&I2CDisplay, TextAnchor_SouthWest, msg,	SSD_COLOR_WHITE);
+	SSD1306_Update(&I2CDisplay);
+	ESP_LOGI(TAG, "1> %s", msg);
+}
+
+void Clear() {
+	ESP_LOGI(TAG, "-> CLS");
+	SSD1306_Clear(&I2CDisplay, SSD_COLOR_BLACK);
+}
+
+bool display(MD_Menu::userDisplayAction_t action, const char *msg) {
+	static const char *L0msg; //Buffer L0
+	switch (action) {
+	case MD_Menu::DISP_INIT:
+		assert(DefaultBusInit());
+		printf("BUS Init lookin good...\n");
+		printf("Drawing.\n");
+		break;
+
+	case MD_Menu::DISP_CLEAR:
+		Clear();
+		break;
+
+	case MD_Menu::DISP_L0:
+		L0msg = msg;
+		DrawL0(L0msg);
+		break;
+
+	case MD_Menu::DISP_L1:
+		Clear();
+		DrawL0(L0msg);
+		DrawL1(msg);
+		break;
+	}
+
+	return (true);
+}
+#endif
+
+#if DISPLAY_LCDSHIELD
+// Output display to a one of 2 line LCD display. 
 // For a one line display, comment out the L0 handling code.
 // The output display line is cleared with spaces before the
 // requested message is shown.

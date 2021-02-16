@@ -13,17 +13,18 @@ const bool AUTO_START = true; // auto start the menu, manual detect and start if
 
 #define INPUT_SWITCH    0  // Use discrete switches for input
 #define INPUT_LCDSWITCH 0  // Use analog based switches on LCD shield
-#define INPUT_RENCODER  1  // Use rotary encoder with built in push switch
+#define INPUT_RENCODER  0  // Use rotary encoder with built in push switch
 #define INPUT_SERIAL    0  // Serial Monitor INPUT (useful for testing)
+#define INPUT_GPIO      1  //
 
 const uint32_t BAUD_RATE = 57600;   // Serial Monitor speed setting 
 const uint16_t MENU_TIMEOUT = 5000; // in milliseconds
 
-const uint8_t LED_PIN = LED_BUILTIN;  // for myLEDCode function
+//const uint8_t LED_PIN = LED_BUILTIN;  // for myLEDCode function
 
 // Function prototypes for Navigation/Display
 void setupNav(void);
-bool display(MD_Menu::userDisplayAction_t, char* = nullptr);
+bool display(MD_Menu::userDisplayAction_t, const char* = nullptr);
 MD_Menu::userNavAction_t navigation(uint16_t &incDelta);
 
 // Function prototypes for variable get/set functions

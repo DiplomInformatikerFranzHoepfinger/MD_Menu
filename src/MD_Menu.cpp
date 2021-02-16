@@ -2,8 +2,12 @@
 //
 // See the main header file MD_Menu.h for more information
 
+#include <string.h>
+#include <stdlib.h>
 #include <MD_Menu.h>
+#include "esp_log.h"
 #include <MD_Menu_lib.h>
+#include "esp_timer.h"
 
 /**
  * \file
@@ -26,7 +30,7 @@ void MD_Menu::reset(void)
 { 
   CLEAR_FLAG(F_INMENU); 
   CLEAR_FLAG(F_INEDIT); 
-  _currMenu = 0; 
+  _currMenu = mnuId_t::id_NULL;
 };
 
 void MD_Menu::setUserNavCallback(cbUserNav cbNav) 
@@ -48,6 +52,13 @@ void MD_Menu::setMenuWrap(bool bSet)  { if (bSet) { SET_FLAG(F_MENUWRAP); } else
 void MD_Menu::setAutoStart(bool bSet) { if (bSet) { SET_FLAG(F_AUTOSTART); } else { CLEAR_FLAG(F_AUTOSTART); } };
 void MD_Menu::setTimeout(uint32_t t) { _timeout = t; };
 
+
+static uint32_t millis(void)
+{
+	int64_t tt = esp_timer_get_time();
+	return (uint32_t)(tt/1000);
+}
+
 void MD_Menu::timerStart(void)
 {
   _timeLastKey = millis();
@@ -59,7 +70,7 @@ void MD_Menu::timerCheck(void)
 
   if (millis() - _timeLastKey >= _timeout)
   {
-    MD_PRINTS("\ntimerCheck: Menu timeout");
+    MD_PRINTS("timerCheck: Menu timeout");
     reset();
   }
 }
@@ -67,32 +78,32 @@ void MD_Menu::timerCheck(void)
 void MD_Menu::loadMenu(mnuId_t id)
 // Load a menu header definition to the current stack position
 {
-  mnuId_t idx = 0;
+  mnuId_t idx = mnuId_t::id_NULL;
   mnuHeader_t mh;
 
-  if (id != -1)   // look for a menu with that id and load it up
+  if (id != mnuId_t::no_id)   // look for a menu with that id and load it up
   {
-    for (mnuId_t i = 0; i < _mnuHdrCount; i++)
+    for (mnuId_t i = mnuId_t::id_NULL; i < _mnuHdrCount; i++)
     {
-      memcpy_P(&mh, &_mnuHdr[i], sizeof(mnuHeader_t));
+      memcpy(&mh, &_mnuHdr[i], sizeof(mnuHeader_t));
       if (mh.id == id)
       {
-        idx = i;  // found it!
+        idx = (mnuId_t)i;  // found it!
         break;
       }
     }
   }
 
   // we either found the item or we will load the first one by default
-  memcpy_P(&_mnuStack[_currMenu], &_mnuHdr[idx], sizeof(mnuHeader_t));
+  memcpy(&_mnuStack[_currMenu], &_mnuHdr[idx], sizeof(mnuHeader_t));
 }
 
 MD_Menu::mnuItem_t* MD_Menu::loadItem(mnuId_t id)
 // Find a copy the input item to the class private buffer
 {
-  for (mnuId_t i = 0; i < _mnuItmCount; i++)
+  for (mnuId_t i = mnuId_t::id_NULL; i < _mnuItmCount; i++)
   {
-    memcpy_P(&_mnuBufItem, &_mnuItm[i], sizeof(mnuItem_t));
+    memcpy(&_mnuBufItem, &_mnuItm[i], sizeof(mnuItem_t));
     if (_mnuBufItem.id == id)
       return(&_mnuBufItem);
   }
@@ -103,9 +114,9 @@ MD_Menu::mnuItem_t* MD_Menu::loadItem(mnuId_t id)
 MD_Menu::mnuInput_t* MD_Menu::loadInput(mnuId_t id)
 // Find a copy the input item to the class private buffer
 {
-  for (mnuId_t i = 0; i < _mnuInpCount; i++)
+  for (mnuId_t i = mnuId_t::id_NULL; i < _mnuInpCount; i++)
   {
-    memcpy_P(&_mnuBufInput, &_mnuInp[i], sizeof(mnuInput_t));
+    memcpy(&_mnuBufInput, &_mnuInp[i], sizeof(mnuInput_t));
     if (_mnuBufInput.id == id)
       return(&_mnuBufInput);
   }
@@ -121,11 +132,11 @@ MD_Menu::listId_t MD_Menu::getListCount(const char *p)
 
   if (p != nullptr)
   {
-    if (pgm_read_byte(p) != '\0')   // not empty list
+    if (*p != '\0')   // not empty list
     {
       do
       {
-        c = pgm_read_byte(p++);
+        c = *p++;
         if (c == LIST_SEPARATOR) count++;
       } while (c != '\0');
 
@@ -157,7 +168,7 @@ char *MD_Menu::getListItem(const char *p, MD_Menu::listId_t idx, char *buf, uint
     while (idx > 0)
     {
       do
-        c = pgm_read_byte(p++);
+        c = *p++;
       while (c != '\0' && c != LIST_SEPARATOR);
       idx--;
     }
@@ -166,7 +177,7 @@ char *MD_Menu::getListItem(const char *p, MD_Menu::listId_t idx, char *buf, uint
     psz = buf;
     for (uint8_t i = 0; i < bufLen - 1; psz++, i++)
     {
-      *psz = pgm_read_byte(p++);
+      *psz = *p++;
       if (*psz == LIST_SEPARATOR) *psz = '\0';
       if (*psz == '\0') break;
     }
@@ -213,16 +224,16 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 
     if (size == 0)
     {
-      MD_PRINTS("\nEmpty list selection!");
+      MD_PRINTS("Empty list selection!");
       endFlag = true;
     }
     else
     {
-      _pValue = mInp->cbVR(mInp->id, true);
+      _pValue = mInp->cbVR(mInp->id, DO_GET);
 
       if (_pValue == nullptr)
       {
-        MD_PRINTS("\nList cbVR(GET) == NULL!");
+        MD_PRINTS("List cbVR(GET) == NULL!");
         endFlag = true;
       }
       else
@@ -272,7 +283,7 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 
   case NAV_SEL:
     _pValue->value = _V.value;
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     endFlag = true;
     break;
 
@@ -296,7 +307,7 @@ bool MD_Menu::processList(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
     if (rtfb)
     {
       _pValue->value = _V.value;
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
     }
   }
 
@@ -314,11 +325,11 @@ bool MD_Menu::processBool(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   {
   case NAV_NULL:    // this is to initialize the CB_DISP
     {
-      _pValue = mInp->cbVR(mInp->id, true);
+      _pValue = mInp->cbVR(mInp->id, DO_GET);
 
       if (_pValue == nullptr)
       {
-        MD_PRINTS("\nBool cbVR(GET) == NULL!");
+        MD_PRINTS("Bool cbVR(GET) == NULL!");
         endFlag = true;
       }
       else
@@ -337,7 +348,7 @@ bool MD_Menu::processBool(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 
   case NAV_SEL:
     _pValue->value = _V.value;
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     endFlag = true;
     break;
 
@@ -360,14 +371,14 @@ bool MD_Menu::processBool(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
     if (rtfb)
     {
       _pValue->value = _V.value;
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
     }
   }
 
   return(endFlag);
 }
 
-char *MD_Menu::ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool sign, bool leadZero)
+char *ltostr(char *buf, uint8_t bufLen, int32_t v, uint8_t base, bool leadZero = false)
 // Convert a long to a string right justified with leading spaces
 // in the base specified (up to 16).
 {
@@ -415,11 +426,11 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
   {
   case NAV_NULL:    // this is to initialize the CB_DISP
     {
-      _pValue = mInp->cbVR(mInp->id, true);
+      _pValue = mInp->cbVR(mInp->id, DO_GET);
 
       if (_pValue == nullptr)
       {
-        MD_PRINTS("\nInt cbVR(GET) == NULL!");
+        MD_PRINTS("Int cbVR(GET) == NULL!");
         endFlag = true;
       }
       else
@@ -448,7 +459,7 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
 
   case NAV_SEL:
     _pValue->value = _V.value;
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     endFlag = true;
     break;
 
@@ -462,7 +473,8 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     char sz[INP_PRE_SIZE(mInp) + mInp->fieldWidth + INP_POST_SIZE(mInp) + 1];
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base, (_V.value < 0));
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base);
     strPostamble(sz, mInp);
 
     _cbDisp(DISP_L1, sz);
@@ -471,7 +483,7 @@ bool MD_Menu::processInt(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     if (rtfb)
     {
       _pValue->value = _V.value;
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
     }
   }
 
@@ -493,11 +505,11 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
   {
   case NAV_NULL:    // this is to initialize the CB_DISP
   {
-    _pValue = mInp->cbVR(mInp->id, true);
+    _pValue = mInp->cbVR(mInp->id, DO_GET);
 
     if (_pValue == nullptr)
     {
-      MD_PRINTS("\nFloat cbVR(GET) == NULL!");
+      MD_PRINTS("Float cbVR(GET) == NULL!");
       endFlag = true;
     }
     else
@@ -526,7 +538,7 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
 
   case NAV_SEL:
     _pValue->value = _V.value;
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     endFlag = true;
     break;
 
@@ -537,14 +549,15 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
 
   if (update)
   {
-    uint16_t divisor = 1;
+	int32_t divisor = 1;
     char sz[INP_PRE_SIZE(mInp) + mInp->fieldWidth + INP_POST_SIZE(mInp) + 1];
 
     for (uint8_t i = 0; i < FLOAT_DECIMALS; i++)
       divisor *= 10;
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth - (FLOAT_DECIMALS + 1) + 1, _V.value / divisor, 10, (_V.value < 0));
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth - (FLOAT_DECIMALS + 1) + 1, _V.value / divisor, 10);
     sz[strlen(sz) + 1] = '\0';
     sz[strlen(sz)] = DECIMAL_POINT;
     ltostr(sz + strlen(sz), (FLOAT_DECIMALS + 1), abs(_V.value % divisor), 10, false, true);
@@ -557,7 +570,7 @@ bool MD_Menu::processFloat(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uin
     if (rtfb)
     {
       _pValue->value = _V.value;
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
     }
   }
 
@@ -579,11 +592,11 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
   {
   case NAV_NULL:    // this is to initialize the CB_DISP
   {
-    _pValue = mInp->cbVR(mInp->id, true);
+    _pValue = mInp->cbVR(mInp->id, DO_GET);
 
     if (_pValue == nullptr)
     {
-      MD_PRINTS("\nEng cbVR(GET) == NULL!");
+      MD_PRINTS("Eng cbVR(GET) == NULL!");
       endFlag = true;
     }
     else
@@ -651,7 +664,7 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
   case NAV_SEL:
     _pValue->value = _V.value;
     _pValue->power = _V.power;
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     endFlag = true;
     break;
 
@@ -668,14 +681,15 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     static char unitsPrefix[] = { "afpnum kMGTPE" };
 
     uint16_t divisor = 1;
-    char sz[INP_PRE_SIZE(mInp) + mInp->fieldWidth + INP_POST_SIZE(mInp) + 1 + strlen_P(mInp->pList) + 1];
+    char sz[INP_PRE_SIZE(mInp) + mInp->fieldWidth + INP_POST_SIZE(mInp) + 1 + strlen(mInp->pList) + 1];
 
     // work out the divisor we need
     for (uint8_t i = 0; i < ENGU_DECIMALS; i++)
       divisor *= 10;
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth - (ENGU_DECIMALS + 1) + 1, _V.value / divisor, 10, (_V.value < 0));
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth - (ENGU_DECIMALS + 1) + 1, _V.value / divisor, 10);
     sz[strlen(sz) + 1] = '\0';
     sz[strlen(sz)] = DECIMAL_POINT;
     ltostr(sz + strlen(sz), (ENGU_DECIMALS + 1), abs(_V.value % divisor), 10, false, true);
@@ -683,7 +697,7 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     strPostamble(sz, mInp);
     sz[strlen(sz) + 1] = '\0';
     sz[strlen(sz)] = unitsPrefix[(strlen(unitsPrefix) / 2) + (_V.power / 3)]; // milli, kilo, etc
-    strcat_P(sz, mInp->pList);
+    strcat(sz, mInp->pList);
 
     _cbDisp(DISP_L1, sz);
 
@@ -691,7 +705,7 @@ bool MD_Menu::processEng(userNavAction_t nav, mnuInput_t *mInp, bool rtfb, uint1
     if (rtfb)
     {
       _pValue->value = _V.value;
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
     }
   }
 
@@ -705,11 +719,11 @@ bool MD_Menu::processRun(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
 {
   if (nav == NAV_NULL)    // initialize the CB_DISP
   {
-    _pValue = mInp->cbVR(mInp->id, true);
+    _pValue = mInp->cbVR(mInp->id, DO_GET);
 
     if (_pValue == nullptr) // no confirmation required, just run user code
     {
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
       return(true);
     }
     else   // confirmation required
@@ -723,7 +737,7 @@ bool MD_Menu::processRun(userNavAction_t nav, mnuInput_t *mInp, bool rtfb)
   }
   else if (nav == NAV_SEL)  // confirmation received
   {
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     return(true);
   }
 
@@ -741,7 +755,7 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
   {
   case NAV_NULL:    // this is to get the value from the user code
   {
-    _pValue = mInp->cbVR(mInp->id, true);
+    _pValue = mInp->cbVR(mInp->id, DO_GET);
 
     if (_pValue == nullptr)
     {
@@ -762,7 +776,7 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
 
   case NAV_SEL:
     _pValue->value = _V.value;
-    mInp->cbVR(mInp->id, false);
+    mInp->cbVR(mInp->id, DO_SET);
     endFlag = true;
     break;
 
@@ -776,7 +790,8 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
     char sz[INP_PRE_SIZE(mInp) + mInp->fieldWidth + INP_POST_SIZE(mInp) + 1];
 
     strPreamble(sz, mInp);
-    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base, (_V.value < 0));
+    bool sign = (_V.value < 0);
+    ltostr(sz + strlen(sz), mInp->fieldWidth + 1, _V.value, mInp->base);
     strPostamble(sz, mInp);
 
     _cbDisp(DISP_L1, sz);
@@ -785,7 +800,7 @@ bool MD_Menu::processExt(userNavAction_t nav, mnuInput_t* mInp, bool init, bool 
     if (rtfb)
     {
       _pValue->value = _V.value;
-      mInp->cbVR(mInp->id, false);
+      mInp->cbVR(mInp->id, DO_SET);
     }
   }
 
@@ -866,7 +881,7 @@ void MD_Menu::handleMenu(bool bNew)
   {
     _cbDisp(DISP_CLEAR, nullptr);
     _cbDisp(DISP_L0, _mnuStack[_currMenu].label);
-    if (_mnuStack[_currMenu].idItmCurr == 0)
+    if (_mnuStack[_currMenu].idItmCurr == mnuId_t::id_NULL)
       _mnuStack[_currMenu].idItmCurr = _mnuStack[_currMenu].idItmStart;
     SET_FLAG(F_INMENU);
     timerStart();
@@ -931,9 +946,13 @@ void MD_Menu::handleMenu(bool bNew)
         case MNU_INPUT:
         case MNU_INPUT_FB:
           if (loadInput(mi->actionId) != nullptr)
+          {
             handleInput(true);
+          }
           else
-            MD_PRINTS("\nInput definition not found");
+          {
+            MD_PRINTS("Input definition not found");
+          }
           break;
         }
       }
@@ -982,14 +1001,20 @@ bool MD_Menu::runMenu(bool bStart)
     uint16_t dummy;
 
     bStart = (TEST_FLAG(F_AUTOSTART) && _cbNav(dummy) == NAV_SEL);
-    if (bStart) MD_PRINTS("\nrunMenu: Auto Start detected");
-    if (!bStart) return(false);   // nothing to do
+    if (bStart)
+    {
+    	MD_PRINTS("runMenu: Auto Start detected");
+    }
+    if (!bStart)
+    {
+    	return(false);   // nothing to do
+    }
   }
 
   if (bStart)   // start the menu
   {
-    MD_PRINTS("\nrunMenu: Starting menu");
-    _currMenu = 0;
+    MD_PRINTS("runMenu: Starting menu");
+    _currMenu = mnuId_t::id_NULL;
     loadMenu();
     handleMenu(true);
   }
@@ -1005,7 +1030,7 @@ bool MD_Menu::runMenu(bool bStart)
     if (!TEST_FLAG(F_INMENU))
     {
       _cbDisp(DISP_CLEAR, nullptr);
-      MD_PRINTS("\nrunMenu: Ending Menu");
+      MD_PRINTS("runMenu: Ending Menu");
     }
   }
 

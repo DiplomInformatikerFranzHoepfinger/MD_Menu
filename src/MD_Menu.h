@@ -238,18 +238,15 @@ You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
-#include <Arduino.h>
+//#include <Arduino.h>
+#include "stdint.h"
+#include "Menu_Enum.h"
+
 
 /**
  * \file
  * \brief Main header file for class definition of the MD_Menu library
  */
-
-// Label size definitions
-// These are sized for the most common LCD display (16 char x 2 lines) 
-const uint8_t HEADER_LABEL_SIZE = 16;   ///< Displayed length of a menu header label
-const uint8_t ITEM_LABEL_SIZE = 14;     ///< Displayed length of a menu item label
-const uint8_t INPUT_LABEL_SIZE = 14;    ///< Displayed length of an input item label
 
 // Miscellaneous defines
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))  ///< Generic macro for obtaining number of elements of an array
@@ -266,6 +263,9 @@ public:
   /** \name Enumerated values and Typedefs.
   * @{
   */
+
+
+
   /** 
   * Common Action Id type
   * 
@@ -275,7 +275,11 @@ public:
   * future if required. Note that id -1 is used to indicate error or no
   * id, so value must be signed.
   */
-  typedef int8_t mnuId_t;
+  typedef enum mnuId_e mnuId_t;
+
+
+
+
 
   /**
   * Common List Id type
@@ -337,7 +341,7 @@ public:
   * (eg, switches, rotary encoder) and return one of the userNavAction_t
   * enumerated types to trigger the next menu action.
   */
-  typedef bool(*cbUserDisplay)(userDisplayAction_t action, char *msg);
+  typedef bool(*cbUserDisplay)(userDisplayAction_t action, const char *msg);
 
   /**
   * Menu input type enumerated type specification.
@@ -369,6 +373,13 @@ public:
     int8_t  power;   ///< the power of 10 (multiple of 3 eg, -3 (milli) 0, 3 (kilo), 6 (Mega))
   };
 
+
+  enum bGet_t
+  {
+    DO_SET,   ///< Set a Value
+    DO_GET,   ///< Get a Value
+  };
+
   /**
   * Data input/output function prototype
   *
@@ -378,7 +389,7 @@ public:
   * data identified by the ID. Return nullptr to stop the menu from
   * editing the value.
   */
-  typedef value_t*(*cbValueRequest)(mnuId_t id, bool bGet);
+  typedef value_t*(*cbValueRequest)(mnuId_t id, enum bGet_t bGet);
 
   /**
   * Input field definition
@@ -389,14 +400,14 @@ public:
   */
   struct mnuInput_t
   {
-    mnuId_t id;            ///< Identifier for this item
-    char    label[INPUT_LABEL_SIZE + 1]; ///< Label for this menu item
-    inputAction_t action;  ///< Type of action required for this value
-    cbValueRequest cbVR;   ///< Callback function to get/set the value
-    uint8_t fieldWidth;    ///< Width of the displayed field between delimiters
-    value_t range[2];      ///< definition for min/max for input range at [0]/[1]
-    uint8_t base;          ///< number base for display (2 through 16) or floating increment in 1/100 units
-    const char *pList;     ///< pointer to list string or engineering units string in PROGMEM
+    mnuId_t 		id;         ///< Identifier for this item
+    const char *  	label;      ///< Label for this menu item
+    inputAction_t 	action;     ///< Type of action required for this value
+    cbValueRequest 	cbVR;   	///< Callback function to get/set the value
+    uint8_t 		fieldWidth; ///< Width of the displayed field between delimiters
+    value_t 		range[2];   ///< definition for min/max for input range at [0]/[1]
+    uint8_t 		base;       ///< number base for display (2 through 16) or floating increment in 1/100 units
+    const char *	pList;      ///< pointer to list string or engineering units string in PROGMEM
   };
 
   /**
@@ -421,10 +432,10 @@ public:
   */
   struct mnuItem_t
   {
-    mnuId_t id;            ///< Identifier for this item
-    char    label[ITEM_LABEL_SIZE + 1]; ///< Label for this menu item
-    mnuAction_t action;    ///< Selecting this item does this action
-    mnuId_t actionId;      ///< Associated menu or input field Id
+    mnuId_t 		id;         ///< Identifier for this item
+    const char * 	label; 		///< Label for this menu item
+    mnuAction_t 	action;    	///< Selecting this item does this action
+    mnuId_t 		actionId;   ///< Associated menu or input field Id
   };
 
   /**
@@ -436,11 +447,11 @@ public:
   */
   struct mnuHeader_t
   {
-    mnuId_t id;          ///< Identifier for this item
-    char    label[HEADER_LABEL_SIZE + 1]; ///< Label for this menu item
-    mnuId_t idItmStart;  ///< Start item number for menu
-    mnuId_t idItmEnd;    ///< End item number for the menu
-    mnuId_t idItmCurr;   ///< Current item being processed
+    mnuId_t 		id;          ///< Identifier for this item
+    const char * 	label; 		 ///< Label for this menu item
+    mnuId_t 		idItmStart;  ///< Start item number for menu
+    mnuId_t 		idItmEnd;    ///< End item number for the menu
+    mnuId_t 		idItmCurr;   ///< Current item being processed
   };
 
   /** @} */
@@ -653,7 +664,7 @@ private:
   mnuItem_t   _mnuBufItem;              ///< menu item buffer for load function
 
   // Private functions
-  void       loadMenu(mnuId_t id = -1);   ///< find the menu header with the specified ID
+  void       loadMenu(mnuId_t id = mnuId_t::no_id);   ///< find the menu header with the specified ID
   mnuItem_t  *loadItem(mnuId_t id);       ///< find the menu item with the specified ID
   mnuInput_t *loadInput(mnuId_t id);      ///< find the input item with the specified ID
   void       strPreamble(char *psz, mnuInput_t *mInp);  ///< format a preamble to the a variable display
